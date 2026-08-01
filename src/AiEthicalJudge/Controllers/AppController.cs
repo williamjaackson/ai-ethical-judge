@@ -1,8 +1,11 @@
 using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
+using AiEthicalJudge.Hubs;
+using AiEthicalJudge.Models;
 using AiEthicalJudge.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace AiEthicalJudge.Controllers;
 
@@ -13,20 +16,27 @@ public sealed class AppController : ControllerBase
     private static readonly TimeSpan JudgingInterval = TimeSpan.FromSeconds(5);
 
     private readonly ISessionService _session;
+    private readonly IHubContext<ResultsHub> _results;
     private readonly ILogger<AppController> _logger;
 
     public AppController(
         ISessionService session,
+        IHubContext<ResultsHub> results,
         ILogger<AppController> logger)
     {
         _session = session;
+        _results = results;
         _logger = logger;
     }
 
     [HttpPost("reset")]
-    public IActionResult ResetSession()
+    public async Task<IActionResult> ResetSession(CancellationToken cancellationToken)
     {
         _session.Reset();
+
+        // Whatever the graph is showing belongs to the session that just ended.
+        await _results.Clients.All.SendAsync(ResultsHub.ResultsCleared, cancellationToken);
+
         return NoContent();
     }
 
@@ -148,10 +158,7 @@ public sealed class AppController : ControllerBase
                 try
                 {
                     var result = await _session.GetLatestResultsAsync(cancellationToken);
-                    Console.WriteLine(
-                        "[{0}] Judgement: {1}",
-                        sessionId,
-                        result.Payload?.ToJsonString());
+                    await PublishResult(sessionId, result, cancellationToken);
                 }
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
@@ -162,6 +169,36 @@ public sealed class AppController : ControllerBase
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
         }
+    }
+
+    /// <summary>
+    /// Pushes a finished judgement out to every results graph that is watching.
+    /// </summary>
+    private async Task PublishResult(
+        string sessionId,
+        JudgementResult result,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = ResultsSnapshot.From(result);
+
+        if (snapshot is null)
+        {
+            _logger.LogWarning(
+                "Session {SessionId} produced a judgement with nothing to graph.",
+                sessionId);
+            return;
+        }
+
+        await _results.Clients.All.SendAsync(
+            ResultsHub.ResultsUpdated,
+            snapshot,
+            cancellationToken);
+
+        _logger.LogDebug(
+            "Published judgement {Total}/{MaxTotal} for session {SessionId}.",
+            snapshot.Total,
+            snapshot.MaxTotal,
+            sessionId);
     }
 
     public sealed record CriteriaRequest(

@@ -1,3 +1,4 @@
+using AiEthicalJudge.Hubs;
 using AiEthicalJudge.Services;
 using AiEthicalJudge.Services.Llm;
 using Microsoft.Extensions.FileProviders;
@@ -6,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Carries each new judgement to the results graph as it is produced.
+builder.Services.AddSignalR();
 
 builder.Services.AddSingleton(TimeProvider.System);
 
@@ -52,5 +56,7 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapHub<ResultsHub>(ResultsHub.Path);
 
 app.Run();
