@@ -27,6 +27,23 @@ public interface ISessionService
     ImageFrame AddImage(byte[] data, string contentType);
 
     /// <summary>
+    /// Adds a finalized browser transcript segment to the current session.
+    /// </summary>
+    void AddTranscriptSegment(string text);
+
+    /// <summary>
+    /// Configures the speech and appearance criteria for the current judge.
+    /// </summary>
+    JudgeCriteria SetCriteria(
+        IReadOnlyList<string> speech,
+        IReadOnlyList<string> looks);
+
+    /// <summary>
+    /// Whether the current session has criteria and an image to judge.
+    /// </summary>
+    bool IsReadyToJudge();
+
+    /// <summary>
     /// Judges the session as it currently stands.
     /// </summary>
     /// <remarks>

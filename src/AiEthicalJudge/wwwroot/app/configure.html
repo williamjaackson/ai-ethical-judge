@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Configure | TheEthicalAiJudge</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="configure.js" defer></script>
+</head>
+<body>
+  <main class="page-shell configure-page">
+    <header class="page-header">
+      <p class="brand">TheEthical<span>Ai</span>Judge</p>
+      <h1>Configure</h1>
+    </header>
+
+    <form id="configuration">
+      <section class="configuration-section">
+        <div class="section-heading">
+          <h2>Speech</h2>
+          <button class="add-button" data-add="speech-inputs" type="button" aria-label="Add speech input">+</button>
+        </div>
+        <div id="speech-inputs" class="input-list">
+          <input name="speech" type="text" aria-label="Speech instruction 1">
+        </div>
+      </section>
+
+      <section class="configuration-section">
+        <div class="section-heading">
+          <h2>Looks</h2>
+          <button class="add-button" data-add="looks-inputs" type="button" aria-label="Add looks input">+</button>
+        </div>
+        <div id="looks-inputs" class="input-list">
+          <input name="looks" type="text" aria-label="Looks instruction 1">
+        </div>
+      </section>
+
+      <button class="primary-button next-button" type="submit">Next</button>
+    </form>
+  </main>
+</body>
+</html>

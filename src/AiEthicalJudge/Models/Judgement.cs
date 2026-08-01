@@ -3,25 +3,25 @@ using System.Text.Json.Serialization;
 namespace AiEthicalJudge.Models;
 
 /// <summary>
-/// A mark against one criterion.
+/// A mark against one user-defined criterion.
 /// </summary>
+/// <param name="Criterion">The criterion exactly as configured by the user.</param>
 /// <param name="Score">The mark, from 1 to 5.</param>
 /// <param name="Comment">A sentence or two justifying the mark.</param>
 public sealed record CriterionScore(
+    [property: JsonPropertyName("criterion")] string Criterion,
     [property: JsonPropertyName("score")] int Score,
     [property: JsonPropertyName("comment")] string Comment);
 
 /// <summary>
-/// How the scenario scored, criterion by criterion.
+/// How the scenario scored against its user-defined speech and looks criteria.
 /// </summary>
-/// <param name="Theme">How well the performance fits and develops the theme.</param>
-/// <param name="Creativity">How original and inventive it is.</param>
-/// <param name="Execution">How well it is carried off.</param>
+/// <param name="Speech">Scores for the configured speech criteria.</param>
+/// <param name="Looks">Scores for the configured looks criteria.</param>
 /// <param name="Summary">A short overall verdict.</param>
 public sealed record Judgement(
-    [property: JsonPropertyName("theme")] CriterionScore Theme,
-    [property: JsonPropertyName("creativity")] CriterionScore Creativity,
-    [property: JsonPropertyName("execution")] CriterionScore Execution,
+    [property: JsonPropertyName("speech")] IReadOnlyList<CriterionScore> Speech,
+    [property: JsonPropertyName("looks")] IReadOnlyList<CriterionScore> Looks,
     [property: JsonPropertyName("summary")] string Summary)
 {
     /// <summary>The lowest mark a criterion can be given.</summary>
@@ -31,11 +31,12 @@ public sealed record Judgement(
     public const int MaxScore = 5;
 
     /// <summary>
-    /// The three criteria added together, out of <see cref="MaxTotal"/>.
+    /// All user-defined criterion scores added together.
     /// </summary>
     [JsonPropertyName("total")]
-    public int Total => Theme.Score + Creativity.Score + Execution.Score;
+    public int Total => Speech.Concat(Looks).Sum(result => result.Score);
 
     /// <summary>The highest <see cref="Total"/> obtainable.</summary>
-    public const int MaxTotal = MaxScore * 3;
+    [JsonPropertyName("maxTotal")]
+    public int MaxTotal => (Speech.Count + Looks.Count) * MaxScore;
 }

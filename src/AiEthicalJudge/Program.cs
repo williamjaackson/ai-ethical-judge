@@ -1,5 +1,6 @@
 using AiEthicalJudge.Services;
 using AiEthicalJudge.Services.Llm;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,20 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseWebSockets();
+
+var appFiles = new PhysicalFileProvider(
+    Path.Combine(app.Environment.WebRootPath, "app"));
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    RequestPath = "/app",
+    FileProvider = appFiles
+});
+app.UseStaticFiles(new StaticFileOptions
+{
+    RequestPath = "/app",
+    FileProvider = appFiles
+});
 app.UseRouting();
 
 app.UseAuthorization();

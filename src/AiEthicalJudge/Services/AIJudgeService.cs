@@ -30,12 +30,21 @@ public sealed class AIJudgeService : IAIJudgeService
         byte[] image,
         string historicalTranscript,
         string latestTranscript,
+        JudgeCriteria criteria,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(historicalTranscript);
         ArgumentNullException.ThrowIfNull(latestTranscript);
+        ArgumentNullException.ThrowIfNull(criteria);
+
+        if (criteria.Speech.Count == 0 && criteria.Looks.Count == 0)
+        {
+            throw new ArgumentException(
+                "At least one user-defined criterion is required.",
+                nameof(criteria));
+        }
 
         if (image.Length == 0)
         {
@@ -43,21 +52,19 @@ public sealed class AIJudgeService : IAIJudgeService
         }
 
         var request = new ChatCompletionRequest(
-            BuildSystemPrompt(prompt),
+            BuildSystemPrompt(prompt, criteria),
             BuildUserPrompt(previousResult, historicalTranscript, latestTranscript),
             new ChatImage(image, ImageContentType.Detect(image)),
             new JsonResponseSchema(JudgementSchema.Name, JudgementSchema.Json));
 
         var reply = await _client.CompleteAsync(request, cancellationToken);
-        var judgement = Parse(reply);
+        var judgement = Parse(reply, criteria);
 
         _logger.LogDebug(
-            "Judged the scenario {Total}/{MaxTotal} (theme {Theme}, creativity {Creativity}, execution {Execution}).",
+            "Judged the scenario {Total}/{MaxTotal} against {CriterionCount} user-defined criteria.",
             judgement.Total,
-            Judgement.MaxTotal,
-            judgement.Theme.Score,
-            judgement.Creativity.Score,
-            judgement.Execution.Score);
+            judgement.MaxTotal,
+            judgement.Speech.Count + judgement.Looks.Count);
 
         return JsonSerializer.SerializeToNode(judgement, SerializerOptions)
             ?? throw new JudgementFormatException("The judgement could not be serialised.");
@@ -66,20 +73,30 @@ public sealed class AIJudgeService : IAIJudgeService
     /// <summary>
     /// Puts the caller's instructions in front of the rubric the model marks against.
     /// </summary>
-    private static string BuildSystemPrompt(string prompt) =>
+    private static string BuildSystemPrompt(string prompt, JudgeCriteria criteria) =>
         $"""
         {prompt}
 
-        Score the scenario on three criteria, each a whole number from {Judgement.MinScore} to {Judgement.MaxScore}:
+        Judge the scenario only against the user-configured criteria below.
+        Evaluate every criterion exactly once, copy its text verbatim into the
+        response, and give it a whole-number score from {Judgement.MinScore} to {Judgement.MaxScore}
+        with a sentence or two explaining the score.
 
-        - Theme: how well it fits and develops the theme.
-        - Creativity: how original and inventive it is.
-        - Execution: how well it is carried off.
+        Speech criteria (judge these from the transcript):
+        {FormatCriteria(criteria.Speech)}
 
-        Give every criterion a score and a sentence or two justifying it, then a
-        short overall summary. Judge only what you can see in the image and read
-        in the transcript — do not invent details that are not there.
+        Looks criteria (judge these from the image):
+        {FormatCriteria(criteria.Looks)}
+
+        Finish with a short overall summary. Judge only what you can see in the
+        image and read in the transcript; do not invent details that are not there
+        and do not add any criteria of your own.
         """;
+
+    private static string FormatCriteria(IReadOnlyList<string> criteria) =>
+        criteria.Count == 0
+            ? NothingYet
+            : string.Join(Environment.NewLine, criteria.Select(item => $"- {item}"));
 
     /// <summary>
     /// Lays out what has happened so far: what was said, and what you concluded last time.
@@ -117,7 +134,7 @@ public sealed class AIJudgeService : IAIJudgeService
     /// <summary>
     /// Turns the model's reply into a judgement, rejecting anything malformed.
     /// </summary>
-    private static Judgement Parse(string reply)
+    private static Judgement Parse(string reply, JudgeCriteria criteria)
     {
         if (string.IsNullOrWhiteSpace(reply))
         {
@@ -142,25 +159,38 @@ public sealed class AIJudgeService : IAIJudgeService
             throw new JudgementFormatException("The model's judgement was null.");
         }
 
-        ValidateScore(nameof(Judgement.Theme), judgement.Theme);
-        ValidateScore(nameof(Judgement.Creativity), judgement.Creativity);
-        ValidateScore(nameof(Judgement.Execution), judgement.Execution);
+        ValidateCriteria("speech", criteria.Speech, judgement.Speech);
+        ValidateCriteria("looks", criteria.Looks, judgement.Looks);
 
         return judgement;
     }
 
-    private static void ValidateScore(string criterion, CriterionScore? score)
+    private static void ValidateCriteria(
+        string category,
+        IReadOnlyList<string> expected,
+        IReadOnlyList<CriterionScore>? actual)
     {
-        if (score is null)
-        {
-            throw new JudgementFormatException($"The model left {criterion} unscored.");
-        }
-
-        if (score.Score is < Judgement.MinScore or > Judgement.MaxScore)
+        if (actual is null || actual.Count != expected.Count)
         {
             throw new JudgementFormatException(
-                $"The model scored {criterion} {score.Score}, outside the "
-                + $"{Judgement.MinScore}-{Judgement.MaxScore} range.");
+                $"The model returned {actual?.Count ?? 0} {category} scores; expected {expected.Count}.");
+        }
+
+        for (var index = 0; index < expected.Count; index++)
+        {
+            var result = actual[index];
+            if (!string.Equals(result.Criterion, expected[index], StringComparison.Ordinal))
+            {
+                throw new JudgementFormatException(
+                    $"The model changed or reordered the {category} criteria.");
+            }
+
+            if (result.Score is < Judgement.MinScore or > Judgement.MaxScore)
+            {
+                throw new JudgementFormatException(
+                    $"The model scored '{result.Criterion}' {result.Score}, outside the "
+                    + $"{Judgement.MinScore}-{Judgement.MaxScore} range.");
+            }
         }
     }
 }

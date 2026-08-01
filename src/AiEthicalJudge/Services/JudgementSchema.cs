@@ -6,8 +6,8 @@ namespace AiEthicalJudge.Services;
 /// <remarks>
 /// Handed to the model as a strict schema, so a reply either matches
 /// <see cref="Models.Judgement"/> or the request fails outright — there is no
-/// half-parsed middle ground to defend against. <c>total</c> is computed here
-/// rather than asked for, so it is deliberately absent.
+/// half-parsed middle ground to defend against. Totals are computed by the app
+/// rather than asked for, so they are deliberately absent.
 /// </remarks>
 internal static class JudgementSchema
 {
@@ -19,20 +19,29 @@ internal static class JudgementSchema
         {
           "type": "object",
           "properties": {
-            "theme": { "$ref": "#/$defs/criterion" },
-            "creativity": { "$ref": "#/$defs/criterion" },
-            "execution": { "$ref": "#/$defs/criterion" },
+            "speech": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/criterion" }
+            },
+            "looks": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/criterion" }
+            },
             "summary": {
               "type": "string",
               "description": "A short overall verdict on the scenario as it stands."
             }
           },
-          "required": ["theme", "creativity", "execution", "summary"],
+          "required": ["speech", "looks", "summary"],
           "additionalProperties": false,
           "$defs": {
             "criterion": {
               "type": "object",
               "properties": {
+                "criterion": {
+                  "type": "string",
+                  "description": "The user-defined criterion being scored, copied verbatim."
+                },
                 "score": {
                   "type": "integer",
                   "enum": [1, 2, 3, 4, 5],
@@ -43,7 +52,7 @@ internal static class JudgementSchema
                   "description": "A sentence or two justifying the mark."
                 }
               },
-              "required": ["score", "comment"],
+              "required": ["criterion", "score", "comment"],
               "additionalProperties": false
             }
           }
