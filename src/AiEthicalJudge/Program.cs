@@ -11,6 +11,10 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
 builder.Services.AddSingleton<ISessionService, SessionService>();
 
+// Judging is stateless, so one instance serves every request. It needs an
+// IChatCompletionClient, which a provider adapter registers separately.
+builder.Services.AddSingleton<IAIJudgeService, AIJudgeService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
