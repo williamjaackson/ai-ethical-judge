@@ -1,0 +1,5 @@
+[
+  { "label": "Team A", "theme": 3, "creativity": 5, "execution": 4 },
+  { "label": "Team B", "theme": 2, "creativity": 4, "execution": 3 },
+  { "label": "Team C", "theme": 4, "creativity": 3, "execution": 5 }
+]
