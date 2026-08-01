@@ -1,7 +1,10 @@
 using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
+using AiEthicalJudge.Models;
 using AiEthicalJudge.Services;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiEthicalJudge.Controllers;
@@ -11,6 +14,29 @@ namespace AiEthicalJudge.Controllers;
 public sealed class AppController : ControllerBase
 {
     private static readonly TimeSpan JudgingInterval = TimeSpan.FromSeconds(5);
+
+    /// <summary>How often the results stream looks for a fresh judgement.</summary>
+    /// <remarks>
+    /// Faster than <see cref="JudgingInterval"/>, so a new judgement reaches the
+    /// results page promptly rather than waiting out a whole judging round.
+    /// </remarks>
+    private static readonly TimeSpan ResultsPollInterval = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// How long the results stream may stay silent before it sends a keep-alive.
+    /// </summary>
+    /// <remarks>
+    /// Nothing changes between judging rounds, and an idle connection is liable to
+    /// be closed by whatever sits between the browser and the app.
+    /// </remarks>
+    private static readonly TimeSpan ResultsKeepAliveInterval = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// Matches how MVC serialises the same snapshot from <see cref="GetResults"/>,
+    /// so both routes hand the page identically-shaped JSON.
+    /// </summary>
+    private static readonly JsonSerializerOptions SnapshotOptions =
+        new(JsonSerializerDefaults.Web);
 
     private readonly ISessionService _session;
     private readonly ILogger<AppController> _logger;
@@ -128,6 +154,122 @@ public sealed class AppController : ControllerBase
         _session.AddImage(image.ToArray(), contentType);
 
         return Accepted();
+    }
+
+    /// <summary>
+    /// The session as the results page wants it: criteria, the latest judgement,
+    /// and the marks of every judgement before it.
+    /// </summary>
+    [HttpGet("results")]
+    public ActionResult<ResultsSnapshot> GetResults(string sessionId) => BuildSnapshot();
+
+    /// <summary>
+    /// Pushes a fresh <see cref="ResultsSnapshot"/> to the results page whenever
+    /// the session changes, as server-sent events.
+    /// </summary>
+    /// <remarks>
+    /// The first frame goes out immediately, so a page that connects mid-session
+    /// draws straight away instead of waiting for the next judging round. The
+    /// browser reconnects on its own if the stream drops.
+    /// </remarks>
+    [HttpGet("results/stream")]
+    public async Task StreamResults(string sessionId, CancellationToken cancellationToken)
+    {
+        Response.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-store";
+
+        // Frames are useless to the page unless they leave as they are written.
+        HttpContext.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
+
+        using var timer = new PeriodicTimer(ResultsPollInterval);
+        var sent = string.Empty;
+        var silence = TimeSpan.Zero;
+
+        try
+        {
+            do
+            {
+                var snapshot = JsonSerializer.Serialize(BuildSnapshot(), SnapshotOptions);
+
+                if (snapshot != sent)
+                {
+                    await WriteFrameAsync($"data: {snapshot}\n\n", cancellationToken);
+                    sent = snapshot;
+                    silence = TimeSpan.Zero;
+                    continue;
+                }
+
+                silence += ResultsPollInterval;
+                if (silence < ResultsKeepAliveInterval)
+                {
+                    continue;
+                }
+
+                // A bare comment frame: enough traffic to hold the connection open.
+                await WriteFrameAsync(":\n\n", cancellationToken);
+                silence = TimeSpan.Zero;
+            }
+            while (await timer.WaitForNextTickAsync(cancellationToken));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task WriteFrameAsync(string frame, CancellationToken cancellationToken)
+    {
+        await Response.WriteAsync(frame, cancellationToken);
+        await Response.Body.FlushAsync(cancellationToken);
+    }
+
+    private ResultsSnapshot BuildSnapshot()
+    {
+        var criteria = _session.GetCriteria();
+        var latest = _session.GetCachedResult();
+        var history = _session.GetResultHistory()
+            .Select(ToPoint)
+            .OfType<ResultsPoint>()
+            .ToArray();
+
+        return new ResultsSnapshot(
+            criteria?.Speech ?? [],
+            criteria?.Looks ?? [],
+            latest?.Payload,
+            latest?.ProducedAt,
+            history);
+    }
+
+    /// <summary>
+    /// Reduces a stored judgement to the marks the charts plot.
+    /// </summary>
+    /// <returns>
+    /// The point, or <c>null</c> if the stored payload cannot be read back as a
+    /// judgement — one unreadable round should cost its own point, not the chart.
+    /// </returns>
+    private static ResultsPoint? ToPoint(JudgementResult result)
+    {
+        Judgement? judgement;
+
+        try
+        {
+            judgement = result.Payload?.Deserialize<Judgement>(SnapshotOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        if (judgement is null)
+        {
+            return null;
+        }
+
+        return new ResultsPoint(
+            result.ProducedAt,
+            judgement.Total,
+            judgement.MaxTotal,
+            [.. judgement.Speech.Select(score => score.Score)],
+            [.. judgement.Looks.Select(score => score.Score)]);
     }
 
     private async Task JudgePeriodically(
