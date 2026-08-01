@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Results | TheEthicalAiJudge</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="results.js" defer></script>
+</head>
+<body>
+  <main class="page-shell results-page">
+    <header class="results-header">
+      <p class="brand">TheEthical<span>Ai</span>Judge</p>
+      <p id="connection" class="connection" data-state="connecting">
+        <span class="connection-dot" aria-hidden="true"></span>
+        <span id="connection-label">Connecting</span>
+      </p>
+    </header>
+
+    <div class="page-header">
+      <p class="eyebrow">Live results</p>
+      <h1>The judge is <span>thinking</span></h1>
+    </div>
+
+    <section class="verdict-card">
+      <p class="card-label">Running score</p>
+      <p class="hero-figure">
+        <span id="total">&ndash;</span><span class="hero-figure-of">/&thinsp;<span id="max-total">&ndash;</span></span>
+      </p>
+      <div id="meter" class="meter" role="img" aria-label="No score yet.">
+        <div id="meter-fill" class="meter-fill"></div>
+      </div>
+      <p id="summary" class="verdict-summary">Waiting for the first judgement.</p>
+      <p id="produced-at" class="verdict-meta"></p>
+    </section>
+
+    <section class="chart-card">
+      <div class="card-heading">
+        <h2>Score over time</h2>
+        <p id="trend-note" class="card-note"></p>
+      </div>
+      <div id="trend" class="chart"></div>
+    </section>
+
+    <div class="criteria-grid">
+      <section class="chart-card">
+        <div class="card-heading">
+          <h2>Speech</h2>
+          <p class="card-note">Marked out of 5</p>
+        </div>
+        <ul id="speech-list" class="criterion-list"></ul>
+      </section>
+
+      <section class="chart-card">
+        <div class="card-heading">
+          <h2>Looks</h2>
+          <p class="card-note">Marked out of 5</p>
+        </div>
+        <ul id="looks-list" class="criterion-list"></ul>
+      </section>
+    </div>
+
+    <details class="table-view">
+      <summary>Table view</summary>
+      <div class="table-scroll">
+        <table id="rounds-table">
+          <caption class="visually-hidden">Every mark the judge has given this session.</caption>
+          <thead id="rounds-head"></thead>
+          <tbody id="rounds-body"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <div id="tooltip" class="chart-tooltip" role="status" aria-live="polite" hidden></div>
+  </main>
+</body>
+</html>
