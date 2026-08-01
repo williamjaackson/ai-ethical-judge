@@ -17,6 +17,7 @@ public sealed class InMemorySessionStore : ISessionStore
     private readonly TimeProvider _timeProvider;
 
     private ImageFrame? _image;
+    private JudgeCriteria? _criteria;
     private JudgementResult? _latestResult;
 
     public InMemorySessionStore(TimeProvider timeProvider)
@@ -89,6 +90,30 @@ public sealed class InMemorySessionStore : ISessionStore
         }
     }
 
+    public JudgeCriteria SetCriteria(
+        IReadOnlyList<string> speech,
+        IReadOnlyList<string> looks)
+    {
+        ArgumentNullException.ThrowIfNull(speech);
+        ArgumentNullException.ThrowIfNull(looks);
+
+        var criteria = new JudgeCriteria(speech.ToArray(), looks.ToArray());
+        lock (_gate)
+        {
+            _criteria = criteria;
+        }
+
+        return criteria;
+    }
+
+    public JudgeCriteria? GetCriteria()
+    {
+        lock (_gate)
+        {
+            return _criteria;
+        }
+    }
+
     public JudgementResult? GetLatestResult()
     {
         lock (_gate)
@@ -114,6 +139,7 @@ public sealed class InMemorySessionStore : ISessionStore
             _audioChunks.Clear();
             _transcriptSegments.Clear();
             _image = null;
+            _criteria = null;
             _latestResult = null;
         }
     }

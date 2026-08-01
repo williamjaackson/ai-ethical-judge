@@ -51,6 +51,18 @@ public interface ISessionStore
     IReadOnlyList<string> GetTranscriptSegments();
 
     /// <summary>
+    /// Replaces the criteria configured for the current judge.
+    /// </summary>
+    JudgeCriteria SetCriteria(
+        IReadOnlyList<string> speech,
+        IReadOnlyList<string> looks);
+
+    /// <summary>
+    /// The current judge criteria, or <c>null</c> before configuration.
+    /// </summary>
+    JudgeCriteria? GetCriteria();
+
+    /// <summary>
     /// The most recent judgement, or <c>null</c> if none has been produced yet.
     /// </summary>
     JudgementResult? GetLatestResult();

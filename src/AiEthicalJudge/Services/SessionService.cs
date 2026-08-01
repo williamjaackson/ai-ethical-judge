@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using AiEthicalJudge.Models;
 
 namespace AiEthicalJudge.Services;
@@ -8,12 +7,16 @@ namespace AiEthicalJudge.Services;
 /// </summary>
 public sealed class SessionService : ISessionService
 {
+    private const string JudgePrompt =
+        "Judge the ongoing scenario impartially using only the configured criteria.";
+
     /// <summary>
     /// Separates transcript segments when they are consolidated into one string.
     /// </summary>
     private const string TranscriptSeparator = " ";
 
     private readonly ISessionStore _store;
+    private readonly IAIJudgeService _judge;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SessionService> _logger;
 
@@ -25,10 +28,12 @@ public sealed class SessionService : ISessionService
 
     public SessionService(
         ISessionStore store,
+        IAIJudgeService judge,
         TimeProvider timeProvider,
         ILogger<SessionService> logger)
     {
         _store = store;
+        _judge = judge;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -64,6 +69,29 @@ public sealed class SessionService : ISessionService
         return image;
     }
 
+    public void AddTranscriptSegment(string text)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        _store.AppendTranscriptSegment(text);
+    }
+
+    public JudgeCriteria SetCriteria(
+        IReadOnlyList<string> speech,
+        IReadOnlyList<string> looks)
+    {
+        ArgumentNullException.ThrowIfNull(speech);
+        ArgumentNullException.ThrowIfNull(looks);
+        return _store.SetCriteria(speech, looks);
+    }
+
+    public bool IsReadyToJudge()
+    {
+        var criteria = _store.GetCriteria();
+        return _store.GetImage() is not null
+            && criteria is not null
+            && (criteria.Speech.Count > 0 || criteria.Looks.Count > 0);
+    }
+
     public async Task<JudgementResult> GetLatestResultsAsync(
         CancellationToken cancellationToken = default)
     {
@@ -71,34 +99,21 @@ public sealed class SessionService : ISessionService
 
         try
         {
-            // TODO: Placeholder. Transcribe whatever audio has arrived since the
-            // last round and append it to the transcript, so the consolidation
-            // below has something to work with.
-            await TranscribeNewAudioAsync(cancellationToken);
-
             var (historicalTranscript, latestTranscript) = ConsolidateTranscript();
-            var image = _store.GetImage();
+            var image = _store.GetImage()
+                ?? throw new InvalidOperationException("No image is available to judge.");
+            var criteria = _store.GetCriteria()
+                ?? throw new InvalidOperationException("No criteria are configured.");
             var previousResult = _store.GetLatestResult();
 
-            // TODO: Placeholder. Hand the consolidated session to IAIJudgeService
-            // once that lands, roughly:
-            //
-            //   var payload = await _judge.JudgeAsync(
-            //       JudgePrompt,
-            //       previousResult?.Payload,
-            //       image.Data,
-            //       historicalTranscript,
-            //       latestTranscript,
-            //       cancellationToken);
-            //
-            // Open question for then: what to do when no image has arrived yet.
-            // Judging blind, waiting, and failing the request are all defensible,
-            // so it is left undecided rather than guessed at here.
-            var payload = BuildPlaceholderPayload(
+            var payload = await _judge.JudgeAsync(
+                JudgePrompt,
+                previousResult?.Payload,
+                image.Data,
                 historicalTranscript,
                 latestTranscript,
-                image,
-                previousResult);
+                criteria,
+                cancellationToken);
 
             var result = new JudgementResult(payload, _timeProvider.GetUtcNow());
             _store.SetLatestResult(result);
@@ -116,7 +131,6 @@ public sealed class SessionService : ISessionService
     public void Reset()
     {
         _store.Clear();
-        _logger.LogInformation("Session reset.");
     }
 
     /// <summary>
@@ -141,40 +155,4 @@ public sealed class SessionService : ISessionService
         return (historical, segments[^1]);
     }
 
-    /// <summary>
-    /// Turns audio chunks that have arrived since the last round into transcript
-    /// segments.
-    /// </summary>
-    /// <remarks>
-    /// TODO: Placeholder — does nothing. Needs a transcription service, and a
-    /// mark in the store for how far through the audio it has already got, so
-    /// each chunk is transcribed exactly once.
-    /// </remarks>
-    private Task TranscribeNewAudioAsync(CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Stands in for a real judgement, echoing back what the round would have
-    /// been given so the plumbing can be exercised end to end.
-    /// </summary>
-    /// <remarks>
-    /// TODO: Placeholder — delete once the judge service is wired up.
-    /// </remarks>
-    private JsonNode BuildPlaceholderPayload(
-        string historicalTranscript,
-        string latestTranscript,
-        ImageFrame? image,
-        JudgementResult? previousResult) =>
-        new JsonObject
-        {
-            ["placeholder"] = true,
-            ["audioChunkCount"] = _store.GetAudioChunks().Count,
-            ["hasImage"] = image is not null,
-            ["historicalTranscript"] = historicalTranscript,
-            ["latestTranscript"] = latestTranscript,
-            ["hadPreviousResult"] = previousResult is not null,
-        };
 }

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using AiEthicalJudge.Models;
 
 namespace AiEthicalJudge.Services;
 
@@ -23,5 +24,6 @@ public interface IAIJudgeService
         byte[] image,
         string historicalTranscript,
         string latestTranscript,
+        JudgeCriteria criteria,
         CancellationToken cancellationToken = default);
 }
