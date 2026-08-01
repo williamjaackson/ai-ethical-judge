@@ -5,6 +5,10 @@ const transcript = document.querySelector('#transcript');
 const sessionId = sessionStorage.getItem('judgeSessionId') || crypto.randomUUID();
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
+// Carries the session in the URL, so the results can be opened on a second screen.
+document.querySelector('#results-link').href =
+  `results.html?session=${encodeURIComponent(sessionId)}`;
+
 let media;
 let recognition;
 let audioRecorder;

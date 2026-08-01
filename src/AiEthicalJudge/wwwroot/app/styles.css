@@ -214,3 +214,460 @@ p {
 .judge-page > .primary-button {
   width: 100%;
 }
+
+.results-footnote {
+  margin: 1rem 0 0;
+  text-align: center;
+}
+
+.results-link {
+  color: #aaa;
+  font-size: .85rem;
+  text-decoration-color: #555;
+}
+
+.results-link:hover {
+  color: #fff;
+}
+
+/* Live results
+   ------------
+   The app is dark only, so the chart roles below are one set of tokens rather
+   than a light/dark pair. Every chart here plots a single series, so colour
+   never has to carry identity — the brand red marks the data and the greys stay
+   recessive behind it. */
+
+.results-page {
+  --chart-surface: #121212;
+  --chart-accent: #dc002a;
+  --chart-track: #5c0010;
+  --chart-grid: #2c2c2c;
+  --chart-ink: #fff;
+  --chart-ink-secondary: #ddd;
+  --chart-ink-muted: #aaa;
+  --chart-ink-dim: #8a8a8a;
+
+  width: min(100%, 72rem);
+  padding-bottom: 4rem;
+}
+
+.results-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.results-header .brand {
+  margin-bottom: 1.25rem;
+}
+
+.connection {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0 0 1.25rem;
+  color: var(--chart-ink-muted);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.connection-dot {
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.connection[data-state="live"] {
+  color: #0ca30c;
+}
+
+.connection[data-state="offline"] {
+  color: #d03b3b;
+}
+
+.results-page .page-header h1 {
+  margin-bottom: 1.5rem;
+}
+
+.verdict-card,
+.chart-card {
+  margin-bottom: 1rem;
+  border: 1px solid var(--chart-grid);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: var(--chart-surface);
+}
+
+.card-label,
+.card-note {
+  margin: 0;
+  color: var(--chart-ink-muted);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card-heading h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: -.02em;
+}
+
+/* The one hero figure on the page. Proportional digits: tabular ones look
+   loose at this size. */
+.hero-figure {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  margin: .5rem 0 1rem;
+  font-size: clamp(3rem, 11vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+/* A dash at this size reads as a redaction, not as "no value" — so before the
+   first judgement the figure is simply absent and the waiting note carries it. */
+.hero-figure.is-empty {
+  display: none;
+}
+
+.hero-figure-of {
+  color: var(--chart-ink-muted);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+.meter {
+  overflow: hidden;
+  margin-top: 1rem;
+  height: .5rem;
+  border-radius: .25rem;
+  background: var(--chart-track);
+}
+
+.meter-fill {
+  width: 0;
+  height: 100%;
+  border-radius: 0 .25rem .25rem 0;
+  background: var(--chart-accent);
+  transition: width .4s ease;
+}
+
+.verdict-summary {
+  margin: 1.25rem 0 0;
+  color: var(--chart-ink-secondary);
+  font-size: 1.15rem;
+  line-height: 1.55;
+}
+
+.verdict-meta {
+  margin: .75rem 0 0;
+  color: var(--chart-ink-muted);
+  font-size: .85rem;
+}
+
+.chart {
+  min-height: 15rem;
+}
+
+.chart-empty,
+.criterion-empty {
+  margin: 0;
+  padding: 3rem 0;
+  color: var(--chart-ink-muted);
+  font-size: .95rem;
+  text-align: center;
+}
+
+.trend-chart {
+  display: block;
+  overflow: visible;
+}
+
+/* Hairline, solid, one step off the surface — the grid never competes. */
+.chart-gridline {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.chart-crosshair {
+  stroke: #555;
+  stroke-width: 1;
+  visibility: hidden;
+}
+
+.chart-crosshair.is-tracking {
+  visibility: visible;
+}
+
+.chart-area {
+  fill: var(--chart-accent);
+  fill-opacity: .1;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--chart-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.chart-end-dot {
+  fill: var(--chart-accent);
+  stroke: var(--chart-surface);
+  stroke-width: 2;
+}
+
+.chart-tick {
+  fill: var(--chart-ink-muted);
+  font-size: .7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-end-label {
+  fill: var(--chart-ink);
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.criteria-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+
+.criteria-grid .chart-card {
+  margin-bottom: 0;
+}
+
+.criterion-list {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.criterion {
+  border-radius: .6rem;
+  outline-offset: .35rem;
+}
+
+.criterion:focus-visible {
+  outline: 2px solid var(--chart-accent);
+}
+
+.criterion-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.criterion-name {
+  margin: 0;
+  color: var(--chart-ink);
+  font-size: .95rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.criterion-score {
+  flex-shrink: 0;
+  margin: 0;
+  color: var(--chart-ink-muted);
+  font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.criterion-score strong {
+  color: var(--chart-ink);
+  font-size: 1.15rem;
+}
+
+.criterion-delta {
+  margin-left: .5rem;
+  color: var(--chart-ink-muted);
+}
+
+.criterion-plot {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-top: .6rem;
+}
+
+.criterion-track {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  height: .375rem;
+  border-radius: .1875rem;
+  background: var(--chart-track);
+}
+
+/* The 1-5 scale, marked once per step so bars are comparable down the list. */
+.criterion-steps {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0 calc(20% - 1px),
+    var(--chart-grid) calc(20% - 1px) 20%);
+}
+
+.criterion-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 0 .1875rem .1875rem 0;
+  background: var(--chart-accent);
+  transition: width .4s ease;
+}
+
+.sparkline {
+  flex-shrink: 0;
+}
+
+/* Grey, so the trend never reads as a continuation of the red bar beside it —
+   only the current mark is in the accent. */
+.sparkline-line {
+  fill: none;
+  stroke: var(--chart-ink-dim);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.sparkline-dot {
+  fill: var(--chart-accent);
+  stroke: var(--chart-surface);
+  stroke-width: 2;
+}
+
+.criterion-comment {
+  margin: .6rem 0 0;
+  color: var(--chart-ink-muted);
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+.table-view {
+  margin-top: 1rem;
+  border: 1px solid var(--chart-grid);
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--chart-surface);
+}
+
+.table-view summary {
+  cursor: pointer;
+  color: var(--chart-ink-muted);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.table-view table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.table-view th,
+.table-view td {
+  border-bottom: 1px solid var(--chart-grid);
+  padding: .5rem .75rem .5rem 0;
+  text-align: left;
+}
+
+.table-view thead th {
+  color: var(--chart-ink-muted);
+  font-weight: 700;
+}
+
+.table-view tbody th {
+  color: var(--chart-ink-muted);
+  font-weight: 400;
+}
+
+.chart-tooltip {
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  min-width: 9rem;
+  border: 1px solid #3a3a3a;
+  border-radius: .6rem;
+  padding: .6rem .75rem;
+  background: #1a1a1a;
+  box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / 55%);
+}
+
+.tooltip-title {
+  margin: 0 0 .4rem;
+  color: var(--chart-ink-muted);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  margin: 0;
+  font-size: .85rem;
+}
+
+/* A short stroke of the series colour: identity beside the text, never in it. */
+.tooltip-key {
+  width: .75rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--chart-accent);
+}
+
+.tooltip-row strong {
+  color: var(--chart-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip-label {
+  color: var(--chart-ink-muted);
+  font-size: .8rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  overflow: hidden;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  white-space: nowrap;
+}
