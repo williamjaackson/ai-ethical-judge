@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Results | TheEthicalAiJudge</title>
+  <link rel="stylesheet" href="styles.css">
+  <!--
+    The live feed is a progressive enhancement: if this script is blocked the
+    page falls back to polling the results endpoint, so it still keeps up.
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js" defer></script>
+  <script src="results.js" defer></script>
+</head>
+<body>
+  <main class="page-shell results-page">
+    <header class="results-header">
+      <p class="brand">TheEthical<span>Ai</span>Judge</p>
+      <p id="status" class="status">Connecting</p>
+    </header>
+
+    <h1>Results</h1>
+
+    <p id="total" class="results-total" hidden></p>
+    <p id="waiting" class="results-waiting">Waiting for the first judgement.</p>
+
+    <div id="board" class="results-board"></div>
+
+    <p id="summary" class="results-summary" aria-live="polite" hidden></p>
+
+    <a class="results-link" href="judge.html">Back to judge</a>
+  </main>
+</body>
+</html>
