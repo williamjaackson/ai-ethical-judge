@@ -1,7 +1,15 @@
+using AiEthicalJudge.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddSingleton(TimeProvider.System);
+
+// The session is shared by the whole app and lives only in memory.
+builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
+builder.Services.AddSingleton<ISessionService, SessionService>();
 
 var app = builder.Build();
 
