@@ -69,7 +69,6 @@ src/AiEthicalJudge/          MVC web app
   Controllers/               Request handlers
   Models/                    View models
   Views/                     Razor views
-  wwwroot/                   Static assets (CSS, JS, Bootstrap, jQuery)
   Program.cs                 App entry point and service configuration
   appsettings.json           Configuration
 ```
