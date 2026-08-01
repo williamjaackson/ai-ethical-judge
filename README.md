@@ -63,15 +63,21 @@ dotnet dev-certs https --trust
 
 ## Project layout
 
+This is a bare MVC server skeleton — `Controllers/`, `Models/` and `Views/` are
+empty, held by `.gitkeep`, ready to be filled in. There is no `wwwroot/`; add one
+if you need static assets.
+
 ```
 AiEthicalJudge.slnx          Solution file
 src/AiEthicalJudge/          MVC web app
-  Controllers/               Request handlers
-  Models/                    View models
-  Views/                     Razor views
+  Controllers/               (empty) Request handlers
+  Models/                    (empty) View models
+  Views/                     (empty) Razor views
   Program.cs                 App entry point and service configuration
   appsettings.json           Configuration
 ```
+
+With no controllers registered, every route returns 404 until you add one.
 
 ## Contributing
 
