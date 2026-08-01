@@ -64,6 +64,22 @@ public interface ISessionService
     JudgementResult? GetCachedResult();
 
     /// <summary>
+    /// Every judgement produced this session, oldest first.
+    /// </summary>
+    /// <remarks>
+    /// Returns immediately — like <see cref="GetCachedResult"/>, this never calls
+    /// the judge service. The oldest entries are dropped once the session has run
+    /// long enough, so this is a recent history rather than an exhaustive one.
+    /// </remarks>
+    IReadOnlyList<JudgementResult> GetResultHistory();
+
+    /// <summary>
+    /// The criteria the current judge was configured with, or <c>null</c> before
+    /// configuration.
+    /// </summary>
+    JudgeCriteria? GetCriteria();
+
+    /// <summary>
     /// Ends the current session and starts an empty one.
     /// </summary>
     void Reset();

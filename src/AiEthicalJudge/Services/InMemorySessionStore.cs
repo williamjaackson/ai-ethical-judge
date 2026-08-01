@@ -11,14 +11,21 @@ namespace AiEthicalJudge.Services;
 /// </remarks>
 public sealed class InMemorySessionStore : ISessionStore
 {
+    /// <summary>
+    /// How many judgements are kept for the results page to plot. At one
+    /// judgement every few seconds this is far more than a sitting needs, and it
+    /// stops a page left open all day from growing without bound.
+    /// </summary>
+    private const int MaxRetainedResults = 720;
+
     private readonly Lock _gate = new();
     private readonly List<AudioChunk> _audioChunks = [];
     private readonly List<string> _transcriptSegments = [];
+    private readonly List<JudgementResult> _results = [];
     private readonly TimeProvider _timeProvider;
 
     private ImageFrame? _image;
     private JudgeCriteria? _criteria;
-    private JudgementResult? _latestResult;
 
     public InMemorySessionStore(TimeProvider timeProvider)
     {
@@ -118,7 +125,15 @@ public sealed class InMemorySessionStore : ISessionStore
     {
         lock (_gate)
         {
-            return _latestResult;
+            return _results.Count == 0 ? null : _results[^1];
+        }
+    }
+
+    public IReadOnlyList<JudgementResult> GetResultHistory()
+    {
+        lock (_gate)
+        {
+            return _results.ToArray();
         }
     }
 
@@ -128,7 +143,12 @@ public sealed class InMemorySessionStore : ISessionStore
 
         lock (_gate)
         {
-            _latestResult = result;
+            _results.Add(result);
+
+            if (_results.Count > MaxRetainedResults)
+            {
+                _results.RemoveRange(0, _results.Count - MaxRetainedResults);
+            }
         }
     }
 
@@ -138,9 +158,9 @@ public sealed class InMemorySessionStore : ISessionStore
         {
             _audioChunks.Clear();
             _transcriptSegments.Clear();
+            _results.Clear();
             _image = null;
             _criteria = null;
-            _latestResult = null;
         }
     }
 }

@@ -68,6 +68,16 @@ public interface ISessionStore
     JudgementResult? GetLatestResult();
 
     /// <summary>
+    /// Every judgement produced this session, oldest first.
+    /// </summary>
+    /// <remarks>
+    /// The results page plots these, so it can show how the judge's marks have
+    /// moved rather than only where they landed. Implementations may drop the
+    /// oldest entries to stay bounded.
+    /// </remarks>
+    IReadOnlyList<JudgementResult> GetResultHistory();
+
+    /// <summary>
     /// Records a judgement as the most recent one.
     /// </summary>
     void SetLatestResult(JudgementResult result);
