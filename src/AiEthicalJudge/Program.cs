@@ -1,4 +1,5 @@
 using AiEthicalJudge.Services;
+using AiEthicalJudge.Services.Llm;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +12,13 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
 builder.Services.AddSingleton<ISessionService, SessionService>();
 
-// Judging is stateless, so one instance serves every request. It needs an
-// IChatCompletionClient, which a provider adapter registers separately.
+// Judging is stateless, so one instance serves every request.
 builder.Services.AddSingleton<IAIJudgeService, AIJudgeService>();
+
+// OpenAI is the only provider the app knows about, and only here.
+builder.Services.Configure<OpenAIOptions>(
+    builder.Configuration.GetSection(OpenAIOptions.SectionName));
+builder.Services.AddSingleton<IChatCompletionClient, OpenAIChatCompletionClient>();
 
 var app = builder.Build();
 
