@@ -128,6 +128,10 @@ public sealed class SessionService : ISessionService
 
     public JudgementResult? GetCachedResult() => _store.GetLatestResult();
 
+    public IReadOnlyList<JudgementResult> GetResultHistory() => _store.GetResultHistory();
+
+    public JudgeCriteria? GetCriteria() => _store.GetCriteria();
+
     public void Reset()
     {
         _store.Clear();
